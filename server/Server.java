@@ -152,17 +152,20 @@ public class Server {
             this.reader = new BufferedReader(new InputStreamReader(new FileInputStream(PATH_LISTE_COURS)));
             List<Course> coursDeLaSession = new ArrayList<>();
 
+            // Lire les cours dans le fichier et les mettre dans la liste coursDeLaSession
             String ligne;
             while ((ligne = this.reader.readLine()) != null) {
+                // Enregistrer les données dans les variables séparées
                 String[] ligneSplitee = ligne.split("\t");
                 String nom = ligneSplitee[1];
                 String code = ligneSplitee[0];
                 String session = ligneSplitee[2];
 
+                // Créer le cours et l'ajouter
                 coursDeLaSession.add(new Course(nom, code, session));
             }
 
-            objectOutputStream.writeObject(coursDeLaSession); // Donner la liste au client
+            objectOutputStream.writeObject(coursDeLaSession); // Donner la liste au client TODO
         } catch (FileNotFoundException exception) {
             System.out.println("Le fichier de la liste des cours n'a pas été trouvé à l'adresse: " + PATH_LISTE_COURS);
             exception.printStackTrace();

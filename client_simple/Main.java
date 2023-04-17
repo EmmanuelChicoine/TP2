@@ -1,6 +1,4 @@
-import server.Server;
-import server.models.Course;
-import server.models.RegistrationForm;
+import models.*;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -10,13 +8,12 @@ import java.util.*;
 
 import javafx.util.Pair;
 
-import static server.Server.PORT;
-import static server.Server.LOAD_COMMAND;
-import static server.Server.REGISTER_COMMAND;
-
 public class Main {
+    final static int PORT = 1337;
+    private final static String REGISTER_COMMAND = "INSCRIRE"; // Le mot à utiliser pour inscrire un étudiant à un cours
+    private final static String LOAD_COMMAND = "CHARGER"; // Le mot à utiliser pour charger la liste des cours d'une session
 
-    final public static String[] SESSIONS = {"automne", "hiver", "ete"}; // Le nom des sessions
+    final private static String[] SESSIONS = {"automne", "hiver", "ete"}; // Le nom des sessions
     final private static String CHOIX_QUESTION = "> Choix: ";            // Pour demander une réponse à l'étudiant
     final private static String IP = "127.0.0.1";                       // L'adresse IP du client
     private static Socket client;                                        // Le socket du client
@@ -64,10 +61,10 @@ public class Main {
         String[] commande = { LOAD_COMMAND, " ", session};
         try {
             objectOutputStream.writeObject(new String(LOAD_COMMAND+ " "+ session));
-            List<Course> listeCours = (ArrayList<Course>) objectInputStream.readObject();
+            List<Course> listeCours = (List<Course>) objectInputStream.readObject(); // TODO
             return listeCours; // Enregistrer cette liste
         } catch (Exception e) {
-            System.err.println("Les cours de la session " + session + " n'ont pas pu être chargé.");
+            System.err.println("Les cours de la session " + session + " n'ont pas pu être chargés.");
             e.printStackTrace();
             return null;
         }
