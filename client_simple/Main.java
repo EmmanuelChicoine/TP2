@@ -30,6 +30,8 @@ public class Main {
     // Le chemin relatif vers le fichier de la liste des inscriptions
     private static final String PATH_LISTE_INSCRIPTION = "data/inscription.txt";
     private static BufferedReader reader;
+    // Le client et le serveur ne communiquent pas bien et la connexion est inutilisable
+    final private static boolean CONNEXION_FONCTIONNE = false;
 
     public static void main(String[] args) {
         try {
@@ -50,10 +52,9 @@ public class Main {
             } while (lireCommande().equals(LOAD_COMMAND)); // Tant que l'utilisateur veut voir la liste des cours
                                                            // d'une session
             // Quand l'utilisateur a fini de consulter les cours
-            objectOutputStream.writeObject(new String(REGISTER_COMMAND + " argVide"));
-            objectOutputStream.writeObject(creerFormulaireInscription());   // Lui faire remplir un formulaire
+            inscrire();
 
-            scan.close();                                       // Fermer le scan
+            scan.close();                                  // Fermer le scan et les streams
             objectOutputStream.close();
             objectInputStream.close();
         } catch (IOException e) {
@@ -70,11 +71,7 @@ public class Main {
     private static List<Course> chargerCoursSession(String session) {
         List<Course> listeCours = new ArrayList<>();
 
-        // La lecture de l'information envoyée par le serveur ne fonctionne pas, donc le client va chercher
-        // l'information du fichier cours.txt dans son projet
-        boolean connexionFonctionne = false;
-
-        if (connexionFonctionne) { // Partie inutilisée
+        if (CONNEXION_FONCTIONNE) { // Partie inutilisée
             listeCours = chargerSessionAvecServeur(session);
         } else { // Partie utilisée
             listeCours = chargerSessionSansServeur(session);
@@ -137,10 +134,10 @@ public class Main {
                 listeCours.add(new Course(nom, code, session));     // Créer le cours et l'ajouter à la liste
             }
         } catch (FileNotFoundException e) {
-            e.getMessage();
+            System.err.println(e.getMessage());
             e.printStackTrace();
         } catch (IOException e) {
-            e.getMessage();
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
 
@@ -289,8 +286,24 @@ public class Main {
         return tousLesCours;
     }
 
+    /**
+     * Écrit les informations de l'étudiant et du cours dans le fichier inscription.txt, dans le dossier de
+     * client_simple si la connexion avec le serveur ne fonctionne pas, et dans le dossier du serveur si elle
+     * fonctionne.
+     */
     private static void inscrire() {
-
+        RegistrationForm form = creerFormulaireInscription();
+        if (CONNEXION_FONCTIONNE) { // Partie inutilisée car le client et le serveur ne communiquent pas bien
+            try {
+                objectOutputStream.writeObject(new String(REGISTER_COMMAND));
+                objectOutputStream.writeObject(form);
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
+                e.printStackTrace();
+            }
+        } else { // Partie utilisée: l'information est modifié dans le fichier dans le dossier du client
+            handleRegistration(form);
+        }
     }
 
     /**
@@ -298,7 +311,7 @@ public class Main {
      *
      * @param form le formulaire d'inscription rempli
      */
-    public void handleRegistration(RegistrationForm form) {
+    private static void handleRegistration(RegistrationForm form) {
         try {
             // Les streams pour le fichier de la liste des inscriptions
             BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_LISTE_INSCRIPTION));
