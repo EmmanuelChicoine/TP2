@@ -11,7 +11,7 @@ public class Main {
     private final static String REGISTER_COMMAND = "INSCRIRE"; // Le mot à utiliser pour inscrire un étudiant à un cours
     private final static String LOAD_COMMAND = "CHARGER"; // Le mot à utiliser pour charger la liste des cours d'une session
 
-    final private static String[] SESSIONS = {"automne", "hiver", "ete"}; // Le nom des sessions
+    final private static String[] SESSIONS = {"Automne", "Hiver", "Ete"}; // Le nom des sessions
     final private static String CHOIX_QUESTION = "> Choix: ";            // Pour demander une réponse à l'étudiant
     final private static String IP = "127.0.0.1";                       // L'adresse IP du client
     private static Socket client;                                        // Le socket du client
@@ -37,9 +37,9 @@ public class Main {
         try {
             // Ces trois variables ne sont pas nécessaires quand la liste des cours et des inscriptions n'est pas
             // demandée au serveur.
-            client = new Socket(IP,PORT);
+            /*client = new Socket(IP,PORT);
             objectOutputStream = new ObjectOutputStream(client.getOutputStream());
-            objectInputStream = new ObjectInputStream(client.getInputStream());
+            objectInputStream = new ObjectInputStream(client.getInputStream());*/
             // Fin des varibales inutilisées
 
             System.out.println("*** Bienvenue au portail d'inscription de l'UDeM ***"); // Message d'accueil
@@ -55,9 +55,13 @@ public class Main {
             inscrire();
 
             scan.close();                                  // Fermer le scan et les streams
-            objectOutputStream.close();
-            objectInputStream.close();
+            /*objectOutputStream.close();
+            objectInputStream.close();*/
         } catch (IOException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -68,7 +72,7 @@ public class Main {
      * @param session La session en question
      * @return La liste
      */
-    private static List<Course> chargerCoursSession(String session) {
+    private static List<Course> chargerCoursSession(String session) throws ClassNotFoundException, IOException {
         List<Course> listeCours = new ArrayList<>();
 
         if (CONNEXION_FONCTIONNE) { // Partie inutilisée
@@ -90,16 +94,11 @@ public class Main {
      * @param session la session voulue
      * @return la liste des cours
      */
-    private static List<Course> chargerSessionAvecServeur(String session) {
+    private static List<Course> chargerSessionAvecServeur(String session) throws IOException, ClassNotFoundException {
         List<Course> listeCours = new ArrayList<>();
 
-        try {
-            objectOutputStream.writeObject(new String(LOAD_COMMAND + " " + session)); // Faire la demande
-            listeCours = (List<Course>) objectInputStream.readObject(); // (Ne fonctionne pas)
-        } catch (Exception e) {
-            System.err.println("Les cours de la session " + session + " n'ont pas pu être chargés.");
-            e.printStackTrace();
-        }
+        objectOutputStream.writeObject(new String(LOAD_COMMAND + " " + session)); // Faire la demande
+        listeCours = (List<Course>) objectInputStream.readObject(); // (Ne fonctionne pas)
 
         return listeCours;
     }
@@ -113,32 +112,24 @@ public class Main {
      * @param session la session voulue
      * @return la liste des cours
      */
-    private static List<Course> chargerSessionSansServeur(String session) {
+    private static List<Course> chargerSessionSansServeur(String session) throws FileNotFoundException, IOException {
         List<Course> listeCours = new ArrayList<>();
 
-        try {
-            // reader du fichier texte avec l'info des cours
-            reader = new BufferedReader(new InputStreamReader(new FileInputStream(PATH_LISTE_COURS)));
+        // reader du fichier texte avec l'info des cours
+        reader = new BufferedReader(new InputStreamReader(new FileInputStream(PATH_LISTE_COURS)));
 
-            // Lire les cours dans le fichier et les mettre dans la liste coursDeLaSession
-            String ligne;
-            while ((ligne = reader.readLine()) != null) {
-                // Enregistrer les données dans des variables séparées
-                String[] ligneSplitee = ligne.split("\t");      // Séparer la ligne
-                String sessionDuCours = ligneSplitee[2];                // session
-                if (!sessionDuCours.equalsIgnoreCase(session))          // si le cours n'est pas de la session
-                    continue;                                           // demandée, passer au prochain
-                String nom = ligneSplitee[1];                           // nom du cours
-                String code = ligneSplitee[0];                          // code du cours
+        // Lire les cours dans le fichier et les mettre dans la liste coursDeLaSession
+        String ligne;
+        while ((ligne = reader.readLine()) != null) {
+            // Enregistrer les données dans des variables séparées
+            String[] ligneSplitee = ligne.split("\t");      // Séparer la ligne
+            String sessionDuCours = ligneSplitee[2];                // session
+            if (!sessionDuCours.equalsIgnoreCase(session))          // si le cours n'est pas de la session
+                continue;                                           // demandée, passer au prochain
+            String nom = ligneSplitee[1];                           // nom du cours
+            String code = ligneSplitee[0];                          // code du cours
 
-                listeCours.add(new Course(nom, code, session));     // Créer le cours et l'ajouter à la liste
-            }
-        } catch (FileNotFoundException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-        } catch (IOException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
+            listeCours.add(new Course(nom, code, session));     // Créer le cours et l'ajouter à la liste
         }
 
         return listeCours;
@@ -201,7 +192,7 @@ public class Main {
      *
      * @return le formulaire
      */
-    private static RegistrationForm creerFormulaireInscription() {
+    private static RegistrationForm creerFormulaireInscription() throws ClassNotFoundException, IOException {
         System.out.print("Veuillez saisir votre prénom: ");         // Prénom
         String prenom = scan.next();
         System.out.print("Veuillez saisir votre nom: ");            // Nom
@@ -222,7 +213,7 @@ public class Main {
      *
      * @return le cours auquel l'étudiant veut s'inscrire
      */
-    private static Course lireCours() {
+    private static Course lireCours() throws ClassNotFoundException, IOException {
         Course cours;                                      // Le cours qui sera retourné
         List<Course> tousLesCours = chargerTousLesCours(); // Tous les cours de toutes les sessions
 
@@ -268,20 +259,15 @@ public class Main {
      *
      * @return la liste de tous les cours
      */
-    private static List<Course> chargerTousLesCours() {
+    private static List<Course> chargerTousLesCours() throws ClassNotFoundException, IOException {
         List<Course> tousLesCours = new ArrayList<>(); // La liste retournée des cours de toutes les sessions
 
-        try {
-            for (int s = 0; s < SESSIONS.length; s++) {                                 // Pour chaque session
-                List<Course> coursSession = chargerCoursSession(SESSIONS[s]); // L'enregistrer
+        for (int s = 0; s < SESSIONS.length; s++) {                                 // Pour chaque session
+            List<Course> coursSession = chargerCoursSession(SESSIONS[s]); // L'enregistrer
 
-                for (Course unCours : coursSession)                                        // Pour chaque cours
-                    tousLesCours.add(unCours);                                                  // L'ajouter à la
-            }                                                                                   // liste principale
-        } catch (Exception e) {
-            System.err.println("Les cours n'ont pas pu être lus dans le fichier.");
-            e.printStackTrace();
-        }
+            for (Course unCours : coursSession)                                        // Pour chaque cours
+                tousLesCours.add(unCours);                                                  // L'ajouter à la
+        }                                                                                   // liste principale
 
         return tousLesCours;
     }
@@ -291,7 +277,7 @@ public class Main {
      * client_simple si la connexion avec le serveur ne fonctionne pas, et dans le dossier du serveur si elle
      * fonctionne.
      */
-    private static void inscrire() {
+    private static void inscrire() throws ClassNotFoundException, IOException {
         RegistrationForm form = creerFormulaireInscription();
         if (CONNEXION_FONCTIONNE) { // Partie inutilisée car le client et le serveur ne communiquent pas bien
             try {
@@ -315,12 +301,13 @@ public class Main {
         try {
             // Les streams pour le fichier de la liste des inscriptions
             BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_LISTE_INSCRIPTION));
-            writer.write(form.getCourse().getSession() + '\t' +            // session
+            writer.append(form.getCourse().getSession() + '\t' +         // session
                     form.getCourse().getCode() + '\t' +                             // code du cours
                     form.getMatricule() + '\t' +                                    // matricule
                     form.getPrenom() + '\t' +                                       // prénom
                     form.getNom() + '\t' +                                          // nom
-                    form.getEmail() + '\n');                                        // email
+                    form.getEmail());                                               // email
+            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
