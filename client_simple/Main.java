@@ -1,8 +1,6 @@
 import models.*;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.*;
 
@@ -25,12 +23,22 @@ public class Main {
     private static List<Course> coursSession; // Les cours d'une session
     private static Pair<String, String> pair;
     private static Scanner scan = new Scanner(System.in); // Pour lire les réponses de l'étudiant
+    // Variables nécessaire pour charger les cours de cours.txt sans passer par le serveur (je n'arrive pas à
+    // transmettre la liste
+    // Le chemin relatif vers le fichier de la liste des cours
+    private static final String PATH_LISTE_COURS = "data/cours.txt";
+    // Le chemin relatif vers le fichier de la liste des inscriptions
+    private static final String PATH_LISTE_INSCRIPTION = "data/inscription.txt";
+    private static BufferedReader reader;
 
     public static void main(String[] args) {
         try {
+            // Ces trois variables ne sont pas nécessaires quand la liste des cours et des inscriptions n'est pas
+            // demandée au serveur.
             client = new Socket(IP,PORT);
             objectOutputStream = new ObjectOutputStream(client.getOutputStream());
-            objectInputStream = new ObjectInputStream(client.getInputStream());   // Et les streams du client
+            objectInputStream = new ObjectInputStream(client.getInputStream());
+            // Fin des varibales inutilisées
 
             System.out.println("*** Bienvenue au portail d'inscription de l'UDeM ***"); // Message d'accueil
 
@@ -42,10 +50,12 @@ public class Main {
             } while (lireCommande().equals(LOAD_COMMAND)); // Tant que l'utilisateur veut voir la liste des cours
                                                            // d'une session
             // Quand l'utilisateur a fini de consulter les cours
-            objectOutputStream.writeBytes(REGISTER_COMMAND);
+            objectOutputStream.writeObject(new String(REGISTER_COMMAND + " argVide"));
             objectOutputStream.writeObject(creerFormulaireInscription());   // Lui faire remplir un formulaire
 
             scan.close();                                       // Fermer le scan
+            objectOutputStream.close();
+            objectInputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -58,20 +68,87 @@ public class Main {
      * @return La liste
      */
     private static List<Course> chargerCoursSession(String session) {
-        String[] commande = { LOAD_COMMAND, " ", session};
-        try {
-            objectOutputStream.writeObject(new String(LOAD_COMMAND+ " "+ session));
-            List<Course> listeCours = (List<Course>) objectInputStream.readObject(); // TODO
-            return listeCours; // Enregistrer cette liste
-        } catch (Exception e) {
-            System.err.println("Les cours de la session " + session + " n'ont pas pu être chargés.");
-            e.printStackTrace();
-            return null;
+        List<Course> listeCours = new ArrayList<>();
+
+        // La lecture de l'information envoyée par le serveur ne fonctionne pas, donc le client va chercher
+        // l'information du fichier cours.txt dans son projet
+        boolean connexionFonctionne = false;
+
+        if (connexionFonctionne) { // Partie inutilisée
+            listeCours = chargerSessionAvecServeur(session);
+        } else { // Partie utilisée
+            listeCours = chargerSessionSansServeur(session);
         }
+
+        return listeCours;
     }
 
     /**
-     * Lister les cours d'une session.
+     * (Cette fonction bogue et n'est présentement pas utilisée. Voir chargerSessionSansServeur pour ce qui
+     * roule réellement.)
+     *
+     * Si la connexion avec le serveur fonctionne (ce qui n'est pas le cas), demander et recevoir la liste
+     * des cours d'une session donnée.
+     *
+     * @param session la session voulue
+     * @return la liste des cours
+     */
+    private static List<Course> chargerSessionAvecServeur(String session) {
+        List<Course> listeCours = new ArrayList<>();
+
+        try {
+            objectOutputStream.writeObject(new String(LOAD_COMMAND + " " + session)); // Faire la demande
+            listeCours = (List<Course>) objectInputStream.readObject(); // (Ne fonctionne pas)
+        } catch (Exception e) {
+            System.err.println("Les cours de la session " + session + " n'ont pas pu être chargés.");
+            e.printStackTrace();
+        }
+
+        return listeCours;
+    }
+
+    /**
+     * (La fonction réellement utilisée pour charger les cours d'une session.)
+     *
+     * Charger la liste des cours d'une session donnée à partir du document dans ce projet, donc sans passer par
+     * le serveur et objectInputStream/objectOutputStream.
+     *
+     * @param session la session voulue
+     * @return la liste des cours
+     */
+    private static List<Course> chargerSessionSansServeur(String session) {
+        List<Course> listeCours = new ArrayList<>();
+
+        try {
+            // reader du fichier texte avec l'info des cours
+            reader = new BufferedReader(new InputStreamReader(new FileInputStream(PATH_LISTE_COURS)));
+
+            // Lire les cours dans le fichier et les mettre dans la liste coursDeLaSession
+            String ligne;
+            while ((ligne = reader.readLine()) != null) {
+                // Enregistrer les données dans des variables séparées
+                String[] ligneSplitee = ligne.split("\t");      // Séparer la ligne
+                String sessionDuCours = ligneSplitee[2];                // session
+                if (!sessionDuCours.equalsIgnoreCase(session))          // si le cours n'est pas de la session
+                    continue;                                           // demandée, passer au prochain
+                String nom = ligneSplitee[1];                           // nom du cours
+                String code = ligneSplitee[0];                          // code du cours
+
+                listeCours.add(new Course(nom, code, session));     // Créer le cours et l'ajouter à la liste
+            }
+        } catch (FileNotFoundException e) {
+            e.getMessage();
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.getMessage();
+            e.printStackTrace();
+        }
+
+        return listeCours;
+    }
+
+    /**
+     * Lister les cours d'une session sur la console.
      *
      * @param coursSession Liste des cours d'une session
      * @param session Nom de la session
@@ -94,7 +171,9 @@ public class Main {
                 "2. Hiver \n" +
                 "3. Ete");
 
-        return SESSIONS[lireNbValide(3)]; // Lire le chiffre et retourner la session correspondante
+        System.out.print(CHOIX_QUESTION);
+        int idx = lireNbValide(3) - 1;
+        return SESSIONS[idx]; // Lire le chiffre et retourner la session correspondante
     }
 
     /**
@@ -109,7 +188,7 @@ public class Main {
         System.out.println(CHOIX_QUESTION);                                             // Options:
         System.out.println("1. Consulter les cours offerts pour une autre session");        // Consulter liste
         System.out.println("2. Inscription à un cours");                                    // Inscription
-        System.out.print(CHOIX_QUESTION);                                               // Demander réponse
+        System.out.print(CHOIX_QUESTION);                                             // Demander la réponse
 
         // Lire la réponse et déterminer la prochaine action
         if (lireNbValide(2) == 1)                  // Si 1
@@ -177,7 +256,6 @@ public class Main {
         boolean valide = false; // Si la réponse est valide
 
         do {
-            System.out.print(CHOIX_QUESTION);   // Demander d'écrire un choix
             reponse = scan.nextInt();           // Lire la réponse
             if (reponse >= 1 && reponse <= max) // Si la réponse donnée est entre 1 et le max
                 valide = true;                      // Elle est valide
@@ -194,12 +272,11 @@ public class Main {
      * @return la liste de tous les cours
      */
     private static List<Course> chargerTousLesCours() {
-        List<Course> tousLesCours = null; // La liste retournée des cours de toutes les sessions
+        List<Course> tousLesCours = new ArrayList<>(); // La liste retournée des cours de toutes les sessions
 
         try {
             for (int s = 0; s < SESSIONS.length; s++) {                                 // Pour chaque session
-                //server.handleEvents(LOAD_COMMAND, SESSIONS[s]);                            // Charger la liste des cours
-                List<Course> coursSession = (List<Course>) objectInputStream.readObject(); // L'enregistrer
+                List<Course> coursSession = chargerCoursSession(SESSIONS[s]); // L'enregistrer
 
                 for (Course unCours : coursSession)                                        // Pour chaque cours
                     tousLesCours.add(unCours);                                                  // L'ajouter à la
@@ -211,4 +288,29 @@ public class Main {
 
         return tousLesCours;
     }
+
+    private static void inscrire() {
+
+    }
+
+    /**
+     * Inscrit l'étudiant au cours souhaité (ajoute ses informations dans le fichier inscription.txt)
+     *
+     * @param form le formulaire d'inscription rempli
+     */
+    public void handleRegistration(RegistrationForm form) {
+        try {
+            // Les streams pour le fichier de la liste des inscriptions
+            BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_LISTE_INSCRIPTION));
+            writer.write(form.getCourse().getSession() + '\t' +            // session
+                    form.getCourse().getCode() + '\t' +                             // code du cours
+                    form.getMatricule() + '\t' +                                    // matricule
+                    form.getPrenom() + '\t' +                                       // prénom
+                    form.getNom() + '\t' +                                          // nom
+                    form.getEmail() + '\n');                                        // email
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }

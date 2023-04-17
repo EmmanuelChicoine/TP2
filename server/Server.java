@@ -186,11 +186,8 @@ public class Server {
             // Le formulaire d'inscription envoyé par le client
             RegistrationForm form = (RegistrationForm) objectInputStream.readObject();
             // Les streams pour le fichier de la liste des inscriptions
-            FileOutputStream fileOutputStream = new FileOutputStream(new File(PATH_LISTE_INSCRIPTION));
-            DataOutputStream output = new DataOutputStream(fileOutputStream);
-
-            // Écrire les infos, séparées par des tabulations, et un retour à la ligne
-            output.writeBytes (form.getCourse().getSession() + '\t' +            // session
+            BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_LISTE_INSCRIPTION));
+            writer.write(form.getCourse().getSession() + '\t' +            // session
                     form.getCourse().getCode() + '\t' +                             // code du cours
                     form.getMatricule() + '\t' +                                    // matricule
                     form.getPrenom() + '\t' +                                       // prénom
