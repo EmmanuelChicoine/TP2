@@ -39,13 +39,15 @@ public class Vue extends HBox {
     private TextField textFieldNom = new TextField();    //                      nom
     private TextField textFieldEmail = new TextField();  //                      email
     private TextField textFieldMatricule = new TextField(); //                   matricule
-    private HBox sectionPrenom = new HBox(new Text("Prénom"), textFieldPrenom); // Sections d'entrée d'info : prénom
-    private HBox sectionNom = new HBox(new Text("Nom"), textFieldNom);          //                            nom
-    private HBox sectionEmail = new HBox(new Text("Email"), textFieldEmail);    //                            email
-    private HBox sectionMatricule = new HBox(new Text("Matricule"), textFieldMatricule); //                 matricule
+    private TextField textFieldCode = new TextField(); //                        code du cours
+    private HBox sectionPrenom = new HBox(new Text("Prénom "), textFieldPrenom); // Sections d'entrée d'info : prénom
+    private HBox sectionNom = new HBox(new Text("Nom "), textFieldNom);          //                            nom
+    private HBox sectionEmail = new HBox(new Text("Email "), textFieldEmail);    //                            email
+    private HBox sectionMatricule = new HBox(new Text("Matricule "), textFieldMatricule); //                 matricule
+    private HBox sectionCode = new HBox(new Text("Code "), textFieldCode);//                                   code
     private Button btnEnvoyer = new Button("envoyer"); // Bouton pour envoyer le formulaire rempli
     private VBox formulaire = new VBox(sectionPrenom, sectionNom, sectionEmail, sectionMatricule, // Conteneur du
-                                                                                btnEnvoyer);      // formulaire
+                                                                   sectionCode, btnEnvoyer);      // formulaire
     private Pane centreDroite = new Pane(formulaire); // Conteneur
 
     public Vue() {
@@ -62,13 +64,14 @@ public class Vue extends HBox {
     }
 
     /** Getters **/
-    public String getSession() { return this.listeBtnSession.getSelectionModel().getSelectedItem(); }
+    public String getSession() { return this.listeBtnSession.getSelectionModel().getSelectedItem().toString(); }
     public Button getBtnCharger() { return this.btnCharger; }
     public Button getBtnEnvoyer() { return this.btnEnvoyer; }
     public String getNom() { return textFieldNom.getText(); }
     public String getPrenom() { return textFieldPrenom.getText(); }
     public String getEmail() { return textFieldEmail.getText(); }
     public String getMatricule() { return textFieldMatricule.getText(); }
+    public String getCode() { return textFieldCode.getText(); }
 
     /** Setters **/
     public void setCoursSession(List<Course> coursDonnees) {

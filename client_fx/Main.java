@@ -13,7 +13,7 @@ public class Main extends Application {
         Vue laVue = new Vue();                                      //            la vue
         Controleur leControleur = new Controleur(leModele, laVue);  //            le contrôleur
 
-        Scene scene = new Scene(laVue, 400, 400);            //            la scène : vue et dimensions
+        Scene scene = new Scene(laVue, 500, 400);            //            la scène : vue et dimensions
 
         stage.setScene(scene);                                      // Mettre la scène sur le stage
         stage.setTitle("Inscription UdeM");                         // Le titre de la fenêtre
